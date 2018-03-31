@@ -1,4 +1,4 @@
-#include"client.h"
+#include "client.h"
 
 Client::Client(int num,const string & name,const string & tel,const string & add,const string & pass1,const string & pass2):Person(num,name,tel,pass1)
 {

@@ -5,7 +5,7 @@ int Sql::id = 0;
 
 void Sql::client_info_read(MYSQL* mysql,list<Person*>& person)//用户信息读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		MYSQL_RES* res;
 		string str = "select * from client";
@@ -73,7 +73,7 @@ void Sql::client_info_read(MYSQL* mysql,list<Person*>& person)//用户信息读�
 
 void Sql::shop_info_read(MYSQL* mysql,list<Person*>& person)//商家信息读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		MYSQL_RES* res;
 		string str = "select * from shop";
@@ -147,7 +147,7 @@ void Sql::shop_info_read(MYSQL* mysql,list<Person*>& person)//商家信息读取
 }
 void Sql::courier_info_read(MYSQL* mysql,list<Person*>& person)//配送员信息读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		MYSQL_RES* res;
 		string str = "select * from courier";
@@ -198,7 +198,7 @@ void Sql::courier_info_read(MYSQL* mysql,list<Person*>& person)//配送员信息
 }
 void Sql::dish_info_read(MYSQL* mysql,list<Person*>& person)//菜式信息读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		if(!person.empty())
 		{
@@ -267,7 +267,7 @@ void Sql::dish_info_read(MYSQL* mysql,list<Person*>& person)//菜式信息读取
 
 void Sql::cancel_read(MYSQL* mysql,list<Person*>& person)//退单请求读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		if(!person.empty())
 		{
@@ -326,7 +326,7 @@ void Sql::cancel_read(MYSQL* mysql,list<Person*>& person)//退单请求读取
 
 void Sql::shop_com_read(MYSQL* mysql,list<Person*>& person)//商家评价读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		if(!person.empty())
 		{
@@ -388,7 +388,7 @@ void Sql::shop_com_read(MYSQL* mysql,list<Person*>& person)//商家评价读取
 
 void Sql::courier_com_read(MYSQL* mysql,list<Person*>& person)//配送员评价读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		if(!person.empty())
 		{
@@ -450,7 +450,7 @@ void Sql::courier_com_read(MYSQL* mysql,list<Person*>& person)//配送员评价�
 
 void Sql::order_read(MYSQL* mysql,list<Order*>& order)//订单读取
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		MYSQL_RES* res;
 		string str = "select indent.num,indent.name,indent.price,indent.c_num,indent.c_name,indent.c_tel,indent.state,indent.Date,indent.Time,client.cl_num,client.cl_name,client.cl_tel,client.cl_add,shop.s_num,shop.s_name,shop.s_tel,shop.s_add from indent,client,shop where indent.cl_num=client.cl_num and indent.s_num=shop.s_num";
@@ -541,7 +541,7 @@ void Sql::order_read(MYSQL* mysql,list<Order*>& order)//订单读取
 
 int Sql::order_state_read(MYSQL* mysql,int num)
 {
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		MYSQL_RES* res;
 		string str = "select state from indent where num = "+to_string(num);
@@ -581,7 +581,7 @@ int Sql::order_state_read(MYSQL* mysql,int num)
 bool Sql::info_update(MYSQL* mysql,string & str)//信息更新
 {
 	bool rest = false;
-	if(mysql_real_connect(mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
+	if(mysql_real_connect(mysql,"localhost","root","123456","Order_system",0,NULL,0)!=NULL)
 	{
 		if(mysql_query(mysql,str.c_str())==0)
 			rest = true;
