@@ -26,7 +26,7 @@ public:
 		temp.fm = fm*f.fm;
 		return temp;
 	}
-	friend ostream & operator<<(istream & out,Fraction & f1);
+	friend ostream & operator<<(ostream & out,Fraction & f1);
 	friend istream & operator>>(istream & in,Fraction & f1);
 };
  
@@ -41,7 +41,7 @@ istream & operator>>(istream & in,Fraction & f1)
 }
 
 cout 重载
-ostream & operator<<(istream & in,Fraction & f1)
+ostream & operator<<(ostream & in,Fraction & f1)
 {
 	out<<f1.fz<<'/'<<f1.fm;
 	return out;
