@@ -7,6 +7,27 @@ System::System()
 
 System::~System()
 {
+#if 1
+	list<Person*>::iterator it;
+	for(it=person.begin();it!=person.end();)
+	{
+		delete (*it);
+		person.erase(it);
+		it=person.begin();
+	}
+	
+	list<Order*>::iterator ie;
+	for(ie=order.begin();ie!=order.end();)
+	{
+		delete (*ie);
+		order.erase(ie);
+		ie=order.begin();
+	}
+#endif
+}
+
+void System::free()
+{
 	list<Person*>::iterator it;
 	for(it=person.begin();it!=person.end();)
 	{
@@ -61,24 +82,28 @@ void System::system_init(list<Person*>& person,list<Order*>& order)
 	bool f1 = false,f2 = false;
 	if(mysql_init(&mysql)!=NULL)
 		f1 = true;
-	if(mysql_real_connect(&mysql,"localhost","root","123456","order_system",0,NULL,0)!=NULL)
+	if(mysql_real_connect(&mysql,"localhost","root","123456","order_system_lrh",0,NULL,0)!=NULL)
 		f2 = true;
 	if(f1&f2)
 	{
+#if 0
 		cout<<"\n\n\n\n\n\n\n\n\n\n\t\t\t\t正在连接数据数据库....."<<endl;
 		sleep(1);
 		cout<<"\n\t\t\t\t数据库连接成功，正在数据数据....."<<endl;
+
 		sql->client_info_read(&mysql,person);//用户信息读取
 		sql->shop_info_read(&mysql,person);//商家信息读取
 		sql->courier_info_read(&mysql,person);//配送员信息读取
+		sql->order_read(&mysql,order);//订单读取
 		sql->dish_info_read(&mysql,person);//菜式信息读取
 		sql->cancel_read(&mysql,person);//退单请求读取
 		sql->shop_com_read(&mysql,person);//商家评价读取
 		sql->courier_com_read(&mysql,person);//配送员评价读取
 		sql->order_read(&mysql,order);//订单读取
 		sleep(1);
-		cout<<"\n\t\t\t\t数据加载完成,请稍等....."<<endl;
-		sleep(1);
+#endif	
+		cout<<"\n\n\n\n\n\n\n\n\n\n\t\t\t\t数据库初始化完成,请稍等....."<<endl;
+		sleep(2);
 	
 	}
 	else
@@ -93,18 +118,23 @@ void System::system_init(list<Person*>& person,list<Order*>& order)
 void System::system_exit()
 {
 	system("clear");
+	cout<<"\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t\t正在退出系统...."<<endl;
+	
+#if 0
 	if(mysql_real_connect(&mysql,"localhost","root","123456","order_system",0,NULL,0)!=NULL)
 	{
-		cout<<"\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t\t正在退出系统.."<<endl;
-		//sql->client_info_write(&mysql,person);//用户信息保存
-		//sql->shop_info_write(&mysql,person);//商家信息保存
-		//sql->courier_info_write(&mysql,person);//配送员信息保存
-		//sql->order_write(&mysql,order);//订单保存
-		//mysql_close(&mysql);
-		//mysql_library_end();	
+		cout<<"\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t\t正在退出系统...."<<endl;
+		sql->client_info_write(&mysql,person);//用户信息保存
+		sql->shop_info_write(&mysql,person);//商家信息保存
+		sql->courier_info_write(&mysql,person);//配送员信息保存
+		sql->order_write(&mysql,order);//订单保存
+		mysql_close(&mysql);
+		mysql_library_end();	
 		sleep(1);
 	}
 	mysql_close(&mysql);
+#endif
+
 	mysql_library_end();
 
 }
@@ -113,7 +143,7 @@ void System::head_print()
 {
 	system("clear");
 	cout<<"\t\t\t*****************************************************************\n\n";
-	cout<<"\t\t\t****************欢 迎 来 到 外 卖 订 餐 系 统********************\n\n";
+	cout<<"\t\t\t****************外    卖    订    餐    系    统*****************\n\n";
 	cout<<"\t\t\t*****************************************************************\n";
 }
 
@@ -339,7 +369,7 @@ void System::courier_info_man_menu()
 	system("clear");
 	cout<<"\n\t\t\t\t*************配  送  员   信   息   管   理*************\n";
 	cout<<"\n\t\t\t\t                    请 输 入 选 项";
-	cout<<"\t\t\t\t           -------------------------------------\n";
+	cout<<"\n\t\t\t\t         -------------------------------------\n";
 	cout<<"\t\t\t\t         |        --1信  息  查  询--        |\n";
 	cout<<"\t\t\t\t         |                                   |\n";
 	cout<<"\t\t\t\t         |        --2信  息  修  改--        |\n";
@@ -489,7 +519,7 @@ void System::start()
 				admin_deal();
 				break;
 			case EXIT:
-				select = 0;
+				select = EXIT;
 				break;
 			default:
 				cout<<"输入无效，请重新输入\n";
@@ -500,11 +530,9 @@ void System::start()
 
 void System::user_deal()
 {
-	int select,n;
-	Client* pcl;
+	int select,num_cl;
 	while(select)
 	{
-		pcl = NULL;
 		user_login_menu();
 		cin>>select;
 		switch(select)
@@ -513,9 +541,9 @@ void System::user_deal()
 				user_enroll();
 				break;
 			case LOGIN:
-				pcl = user_login();
-				if(pcl!=NULL)
-					user_man(pcl);
+				num_cl = user_login();
+				if(num_cl!=-1)
+					user_man(num_cl);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -528,9 +556,9 @@ void System::user_deal()
 
 }
 
-void System::user_man(Client* pcl)
+void System::user_man(int num_cl)
 {
-	user_cancel_order_deal(pcl);
+	user_cancel_order_deal(num_cl);
 	int select;
 	while(select)
 	{
@@ -539,10 +567,10 @@ void System::user_man(Client* pcl)
 		switch(select)
 		{
 			case USER_ORDER:
-				user_order_man(pcl);
+				user_order_man(num_cl);
 				break;
 			case USER_INFO:
-				user_info_man(pcl);
+				user_info_man(num_cl);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -555,7 +583,7 @@ void System::user_man(Client* pcl)
 
 }
 
-void System::user_order_man(Client* pcl)
+void System::user_order_man(int num_cl)
 {
 	int select;
 	while(select)
@@ -565,19 +593,19 @@ void System::user_order_man(Client* pcl)
 		switch(select)
 		{
 			case ORDER_ADD:
-				user_order_add(pcl);
+				user_order_add(num_cl);
 				break;
 			case ORDER_DEL:
-				user_order_del(pcl);
+				user_order_del(num_cl);
 				break;
 			case ORDER_RECEIVE:
-				user_order_get(pcl);
+				user_order_get(num_cl);
 				break;
 			case ORDER_LOOK:
-				user_order_search(pcl);
+				user_order_search(num_cl);
 				break;
 			case COMMENT:
-				user_comment(pcl);
+				user_comment(num_cl);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -589,7 +617,7 @@ void System::user_order_man(Client* pcl)
 	}
 }
 
-void System::user_info_man(Client* pcl)
+void System::user_info_man(int num_cl)
 {
 	int select;
 	while(select)
@@ -599,19 +627,19 @@ void System::user_info_man(Client* pcl)
 		switch(select)
 		{
 			case INFO_DISPLAY:
-				user_info_display(pcl);
+				user_info_display(num_cl);
 				break;
 			case INFO_MODIFY:
-				user_info_modify(pcl);
+				user_info_modify(num_cl);
 				break;
 			case TOP_UP:
-				user_top_up(pcl);//账户充值
+				user_top_up(num_cl);//账户充值
 				break;
 			case USER_PASS:
-				user_pass_modify(pcl);//账户充值
+				user_pass_modify(num_cl);//账户充值
 				break;
 			case USER_PASS_PAY:
-				user_pay_modify(pcl);//账户充值
+				user_pay_modify(num_cl);//账户充值
 				break;
 			case EXIT:
 				select = EXIT;
@@ -626,11 +654,9 @@ void System::user_info_man(Client* pcl)
 
 void System::shop_deal()
 {
-	int select,n;
-	Shop* ps;
+	int select,num_s;
 	while(select)
 	{
-		ps = NULL;
 		shop_login_menu();
 		cin>>select;
 		switch(select)
@@ -639,9 +665,9 @@ void System::shop_deal()
 				shop_enroll();
 				break;
 			case LOGIN:
-				ps = shop_login();
-				if(ps!=NULL)
-					shop_man(ps);
+				num_s = shop_login();
+				if(num_s!=-1)
+					shop_man(num_s);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -653,9 +679,9 @@ void System::shop_deal()
 	}
 }
 
-void System::shop_man(Shop* ps)
+void System::shop_man(int num_s)
 {
-	shop_cancel_order_deal(ps);
+	shop_cancel_order_deal(num_s);
 	int select;
 	while(select)
 	{
@@ -664,16 +690,16 @@ void System::shop_man(Shop* ps)
 		switch(select)
 		{
 			case SHOP_ORDER:
-				shop_order_man(ps);
+				shop_order_man(num_s);
 				break;
 			case SHOP_DISHES:
-				shop_dishes_man(ps);
+				shop_dishes_man(num_s);
 				break;
 			case SHOP_POLICY:
-			    	 shop_policy_man(ps);
+			    	 shop_policy_man(num_s);
 				 break;
 			case SHOP_INFO:
-				shop_info_man(ps);
+				shop_info_man(num_s);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -686,7 +712,7 @@ void System::shop_man(Shop* ps)
 
 }
 
-void System::shop_order_man(Shop* ps)
+void System::shop_order_man(int num_s)
 {
 	int select;
 	while(select)
@@ -696,16 +722,16 @@ void System::shop_order_man(Shop* ps)
 		switch(select)
 		{
 			case ORDER_GET:
-				shop_order_receive(ps);
+				shop_order_receive(num_s);
 				break;
 			case ORDER_REJECT:
-				shop_order_reject(ps);
+				shop_order_reject(num_s);
 				break;
 			case ORDER_SEARCH:
-				shop_order_search(ps);
+				shop_order_search(num_s);
 				break;
 			case COMMENT_LOOK:
-				shop_comment_look(ps);
+				shop_comment_look(num_s);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -717,7 +743,7 @@ void System::shop_order_man(Shop* ps)
 	}
 }
 
-void System::shop_dishes_man(Shop* ps)
+void System::shop_dishes_man(int num_s)
 {
 	int select;
 	while(select)
@@ -727,16 +753,16 @@ void System::shop_dishes_man(Shop* ps)
 		switch(select)
 		{
 			case DISHES_ADD:
-				dishes_add(ps);
+				dishes_add(num_s);
 				break;
 			case DISHES_LOOK:
-				dishes_look(ps);
+				dishes_look(num_s);
 				break;
 			case DISHES_MODIFY:
-				dishes_modify(ps);
+				dishes_modify(num_s);
 				break;
 			case DISHES_DEL:
-				dishes_del(ps);
+				dishes_del(num_s);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -748,7 +774,7 @@ void System::shop_dishes_man(Shop* ps)
 	}
 }
 
-void System::shop_policy_man(Shop* ps)
+void System::shop_policy_man(int num_s)
 {
 	int select;
 	while(select)
@@ -758,13 +784,13 @@ void System::shop_policy_man(Shop* ps)
 		switch(select)
 		{
 			case NORMAL:
-				policy(ps,NORMAL);
+				policy(num_s,NORMAL);
 				break;
 			case DISCOUNT:
-				policy(ps,DISCOUNT);
+				policy(num_s,DISCOUNT);
 				break;
 			case FULL_REDECE:
-				policy(ps,FULL_REDECE);
+				policy(num_s,FULL_REDECE);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -776,7 +802,7 @@ void System::shop_policy_man(Shop* ps)
 	}
 }
 
-void System::shop_info_man(Shop* ps)
+void System::shop_info_man(int num_s)
 {
 	int select;
 	while(select)
@@ -786,13 +812,13 @@ void System::shop_info_man(Shop* ps)
 		switch(select)
 		{
 			case INFO_DISPLAY:
-				shop_info_display(ps);
+				shop_info_display(num_s);
 				break;
 			case INFO_MODIFY:
-				shop_info_modify(ps);
+				shop_info_modify(num_s);
 				break;
 			case PASS_MOD:
-				shop_pass_modify(ps);
+				shop_pass_modify(num_s);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -806,11 +832,9 @@ void System::shop_info_man(Shop* ps)
 
 void System::courier_deal()
 {
-	int select,n;
-	Courier* pc;
+	int select,num_c;
 	while(select)
 	{
-		pc = NULL;
 		courier_login_menu();
 		cin>>select;
 		switch(select)
@@ -819,9 +843,9 @@ void System::courier_deal()
 				courier_enroll();
 				break;
 			case LOGIN:
-				pc = courier_login();
-				if(pc!=NULL)
-					courier_man(pc);
+				num_c = courier_login();
+				if(num_c!=-1)
+					courier_man(num_c);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -834,7 +858,7 @@ void System::courier_deal()
 
 }
 
-void System::courier_man(Courier* pc)
+void System::courier_man(int num_c)
 {
 	int select;
 	while(select)
@@ -844,10 +868,10 @@ void System::courier_man(Courier* pc)
 		switch(select)
 		{
 			case COURIER_ORDER:
-				courier_order_man(pc);
+				courier_order_man(num_c);
 				break;
 			case COURIER_INFO:
-				courier_info_man(pc);
+				courier_info_man(num_c);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -860,7 +884,7 @@ void System::courier_man(Courier* pc)
 
 }
 
-void System::courier_order_man(Courier* pc)
+void System::courier_order_man(int num_c)
 {
 	int select;
 	while(select)
@@ -870,16 +894,16 @@ void System::courier_order_man(Courier* pc)
 		switch(select)
 		{
 			case ORDER_GET:
-				courier_get_order(pc);
+				courier_get_order(num_c);
 				break;
 			case ORDER_SEND:
-				courier_send_order(pc);
+				courier_send_order(num_c);
 				break;
 			case ORDER_SEARCH:
-				courier_order_look(pc);
+				courier_order_look(num_c);
 				break;
 			case COMMENT_LOOK:
-				courier_comment_look(pc);
+				courier_comment_look(num_c);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -891,7 +915,7 @@ void System::courier_order_man(Courier* pc)
 	}
 }
 
-void System::courier_info_man(Courier* pc)
+void System::courier_info_man(int num_c)
 {
 	int select;
 	while(select)
@@ -901,13 +925,13 @@ void System::courier_info_man(Courier* pc)
 		switch(select)
 		{
 			case INFO_DISPLAY:
-				courier_info_display(pc);
+				courier_info_display(num_c);
 				break;
 			case INFO_MODIFY:
-				courier_info_modify(pc);
+				courier_info_modify(num_c);
 				break;
 			case PASS_MOD:
-				courier_pass_modify(pc);
+				courier_pass_modify(num_c);
 				break;
 			case EXIT:
 				select = EXIT;
@@ -1128,6 +1152,8 @@ bool System::enroll_check(string & name,int people)
 
 void System::user_enroll()
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+
 	system("clear");
 	cout<<"\n\t\t\t\t*************客   户   注   册*************\n";	
 	int num=0,temp;
@@ -1169,15 +1195,17 @@ void System::user_enroll()
 	getline(cin,add);
 	Person *p = new Client(num,name,tel,add);//构造 输入客户编号 
 	//cin>>*(Client*)p;//重载输入客户
-	person.push_back(p);//添加客户
+	//person.push_back(p);//添加客户
 	string str = "insert into client values("+to_string(num)+",'"+name+"','"+tel+"','"+add+"','"+"111111"+"','"+"123456"+"',"+to_string(0)+","+to_string(0)+","+to_string(2)+")";
 	sql->info_update(&mysql,str);
 	cout<<"\n\t\t\t\t注册成功,初始登陆密码为："<<p->get_passward()<<"\n\t\t\t\t支付密码为："<<((Client*)p)->get_pass_pay()<<"\n\t\t\t\t请登录后立即修改！\n";
 	sleep(1);
+	free();
 }
 
-Client* System::user_login()
+int System::user_login()
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
 	system("clear");
 	cout<<"\n\t\t\t\t*************客   户   登   录*************\n";	
 	string name,pass;
@@ -1197,20 +1225,37 @@ Client* System::user_login()
 				//pcl = (Client*)tmp;
 				cout<<"\n\t\t\t\t\t    正  在  登  录.....\n";
 				sleep(1);
-				return (Client*)tmp;
+				free();
+				return num;
 
 			}
 		}
 	}
 	cout<<"\n用户名或密码不对，请重新登录\n";
 	sleep(1);
-	return NULL;
+	free();
+	return -1;
 }
 
-void System::user_order_add(Client* pcl)
+void System::user_order_add(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->dish_info_read(&mysql,person);//菜式信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Client* pcl = NULL;
 	if(!person.empty())
 	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+		
 		int flag,temp;
 		system("clear");
 		vector<Shop*>ps;
@@ -1223,7 +1268,7 @@ void System::user_order_add(Client* pcl)
 				list<Dishes*>& dish = ((Shop*)tmp)->get_dish();
 				if(!dish.empty())
 				{
-					cout<<endl<<((Shop*)tmp)->get_name()<<"("<<((Shop*)						tmp)->get_num()<<")"<<" : ";
+					cout<<endl<<((Shop*)tmp)->get_name()<<"("<<((Shop*)tmp)->get_num()<<")"<<" : ";
 					//商家收费方式
 					flag = ((Shop*)tmp)->get_policy();
 					if(flag == NORMAL)
@@ -1255,7 +1300,10 @@ void System::user_order_add(Client* pcl)
 				if(s_num>SHOP*1000 && s_num<=(SHOP+1)*1000)
 					break;
 				else if(s_num == 0)
+				{
+					free();
 					return;
+				}
 				else
 				{
 					cout<<endl<<"\t编号不正确！";
@@ -1298,11 +1346,14 @@ void System::user_order_add(Client* pcl)
 									cout<<endl<<"\t选择数量：";
 									cin>>n;
 									price1 += tmp->get_price() * n;	
-									name += tmp->get_name()+"*"+to_string											(n)+" ";
+									name += tmp->get_name()+" * "+to_string(n)+" ";
 								}
 							}
 							if(num==0 && i==0)
+							{
+								free();
 								return;
+							}
 							else if(num==0 && i!=0)
 								break;	
 							if(flag)
@@ -1377,7 +1428,7 @@ void System::user_order_add(Client* pcl)
 									count_time((*pt));
 									order.push_back(pt);
 									string date,time;
-								       	pt->get_time(date,time);
+								    pt->get_time(date,time);
 									string str = "insert into indent values ("+to_string(n)+",'"+name+"',"+to_string(price2)+","+to_string(pcl->get_num())+","+to_string((*it)->get_num())+","+to_string(0)+",'"+"no name"+"','"+"no tel"+"',"+to_string(0)+",'"+date+"','"+time+"')";
 									sql->info_update(&mysql,str);
 									
@@ -1386,12 +1437,14 @@ void System::user_order_add(Client* pcl)
 
 									cout<<endl<<"下单成功！"<<endl;
 									sleep(1);
+									free();
 									return;
 								}
 								else
 								{
 									cout<<endl<<"账户余额不足，请及时充值.."<<endl;
 									sleep(1);
+									free();
 									return;
 								}
 							}
@@ -1400,8 +1453,10 @@ void System::user_order_add(Client* pcl)
 								cout<<endl<<"密码错误，支付失败.."<<endl;
 								sleep(1);
 							}
+							free();
 							return;
 						}
+						free();
 						return;
 					}
 					cout<<endl<<"\t该商家暂无菜式！"<<endl;
@@ -1422,10 +1477,29 @@ void System::user_order_add(Client* pcl)
 		cout<<endl<<"当前无商家！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 //用户退单
-void System::user_order_del(Client* pcl)
+void System::user_order_del(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	//sql->dish_info_read(&mysql,person);//菜式信息读取
+	sql->order_read(&mysql,order);//订单读取
+	
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}
 	system("clear");
 	if(pcl->get_state()==CANCEL)
 	{
@@ -1484,8 +1558,8 @@ void System::user_order_del(Client* pcl)
 					}
 					if(ps!= NULL)
 					{
-						pcl->set_cancel(num);
-						pcl->set_state(EXIST);
+						//pcl->set_cancel(num);
+						//pcl->set_state(EXIST);
 						vector<int>& can = ps->get_cancel();
 						can.push_back(num);
 
@@ -1522,10 +1596,26 @@ void System::user_order_del(Client* pcl)
 		cout<<"\n\n\n\n\n\n\t\t\t有退单未处理，暂不能退单"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::user_cancel_order_deal(Client* pcl)
+void System::user_cancel_order_deal(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}
+	
 	int state = pcl->get_state();
 	if(state==REJECT || state==RECEIVE)
 	{
@@ -1541,11 +1631,12 @@ void System::user_cancel_order_deal(Client* pcl)
 			cout<<"\n\n\n\n\t\t商家拒绝了您的退单请求"<<endl;
 			sleep(1);
 		}
-		pcl->set_cancel(0);
-		pcl->set_state(CANCEL);
+		//pcl->set_cancel(0);
+		//pcl->set_state(CANCEL);
 		string str = "update client set cancel = "+to_string(0)+", state = "+to_string(CANCEL)+" where cl_num = "+to_string(pcl->get_num());
 		sql->info_update(&mysql,str);
 	}
+	free();
 
 /*
 	if(!can.empty())
@@ -1568,8 +1659,24 @@ void System::user_cancel_order_deal(Client* pcl)
 */
 }
 
-void System::user_order_search(Client* pcl)
+void System::user_order_search(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -1633,11 +1740,29 @@ void System::user_order_search(Client* pcl)
 		cout<<"\t暂无订单信息！"<<endl;
 		sleep(1);
 	}
+	free();
 
 }
 
-void System::user_order_get(Client* pcl)
+void System::user_order_get(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -1742,12 +1867,30 @@ void System::user_order_get(Client* pcl)
 		cout<<"\n\t暂无送达的订单！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::user_comment(Client* pcl)
+void System::user_comment(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
-	static int id;
+	//static int id;
 	int cl_num = pcl->get_num();
 	vector<Order*>order1;
 	for(auto tmp:order)
@@ -1775,7 +1918,10 @@ void System::user_comment(Client* pcl)
 			cout<<endl<<"\t要评价的单号(0取消)：";
 			cin>>num;
 			if(num==0)
+			{
+				free();
 				return;
+			}
 			for(auto tmp:order1)
 			{
 				if(tmp->get_num()==num)
@@ -1815,16 +1961,28 @@ void System::user_comment(Client* pcl)
 							map<string,string> m;
 							m[to_string(pcl->get_num())] = com_shop;
 							vector<map<string,string>>& com = ((Shop*)temp)->get_com();
+							vector<map<string,string>>::iterator it;
+							int count=0;
+							for(it=com.begin();it!=com.end();it++)
+							{
+								count++;
+							}
 							com.push_back(m);
-							str = "insert into s_comment values ("+to_string(id++)+",'"+com_shop+"',"+to_string(cl_num)+","+to_string(s_num)+")";
+							str = "insert into s_comment values ("+to_string(count+1)+",'"+com_shop+"',"+to_string(cl_num)+","+to_string(s_num)+")";
 						}
 						else
 						{
 							map<string,string> m;
 							m[to_string(pcl->get_num())] = com_cour;
 							vector<map<string,string>>& com = ((Courier*)temp)->get_com();
+							vector<map<string,string>>::iterator it;
+							int count=0;
+							for(it=com.begin();it!=com.end();it++)
+							{
+								count++;
+							}
 							com.push_back(m);	
-							str = "insert into c_comment values ("+to_string(id++)+",'"+com_cour+"',"+to_string(cl_num)+","+to_string(c_num)+")";
+							str = "insert into c_comment values ("+to_string(count+1)+",'"+com_cour+"',"+to_string(cl_num)+","+to_string(c_num)+")";
 						}
 						sql->info_update(&mysql,str);
 					
@@ -1835,6 +1993,7 @@ void System::user_comment(Client* pcl)
 				sql->info_update(&mysql,str);
 				cout<<endl<<"\t评价完成！"<<endl;
 				sleep(1);
+				free();
 				return;
 			}
 		}
@@ -1846,10 +2005,25 @@ void System::user_comment(Client* pcl)
 		cout<<endl<<"暂无可评价订单！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::user_info_display(Client* pcl)
+void System::user_info_display(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"个人信息："<<endl;
 	cout<<endl<<"\t编    号："<<pcl->get_num()<<endl;
@@ -1860,10 +2034,25 @@ void System::user_info_display(Client* pcl)
 	cout<<endl<<"\t账户余额："<<pcl->get_money()<<endl;
 	getchar();
 	getchar();
+	free();
 }
 
-void System::user_info_modify(Client* pcl)
+void System::user_info_modify(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	string str,pass,tel,add;
 	cout<<"客户信息修改："<<endl;
@@ -1892,13 +2081,27 @@ void System::user_info_modify(Client* pcl)
 		cout<<"\n登录密码不正确！\n";
 		sleep(1);
 	}
+	free();
 	//cin>>(*pcl);
 	//pcl->pass_modify();
 }
 
-void System::user_pass_modify(Client* pcl)
+void System::user_pass_modify(int num_cl)
 {
-
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	string pass,pass1,pass2,str;
 	system("clear");
 	cout<<"用户登录密码修改：\n";
@@ -1937,11 +2140,25 @@ void System::user_pass_modify(Client* pcl)
 		cout<<"\n密码不正确！\n";
 		sleep(1);
 	}
+	free();
 }
 
-void System::user_pay_modify(Client* pcl)
+void System::user_pay_modify(int num_cl)
 {
-
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	string pass,pass1,pass2,str;
 	system("clear");
 	cout<<"支付密码修改：\n";
@@ -1981,10 +2198,25 @@ void System::user_pay_modify(Client* pcl)
 		cout<<"\n密码不正确！\n";
 		sleep(1);
 	}
+	free();
 }
 
-void System::user_top_up(Client* pcl)
+void System::user_top_up(int num_cl)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	Client* pcl = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_cl)
+				{
+					pcl=(Client*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"账户充值："<<endl;
 	cout<<endl<<"\t充值金额(0到500之间)：";	
@@ -2004,10 +2236,12 @@ void System::user_top_up(Client* pcl)
 
 	cout<<endl<<"\t充值成功！"<<endl;
 	sleep(1);
+	free();
 }
 
 void System::shop_enroll()
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
 	system("clear");
 	cout<<"\n\t\t\t\t*************商   家   注   册*************\n";	
 	int num=0,temp;
@@ -2048,15 +2282,17 @@ void System::shop_enroll()
 	getline(cin,add);
 	Person *p = new Shop(num,name,tel,add);//构造 输入商家编号 
 	//cin>>*(Shop*)p;//重载输入商家
-	person.push_back(p);//添加商家
+	//person.push_back(p);//添加商家
 	string str = "insert into shop values("+to_string(num)+",'"+name+"','"+tel+"','"+add+"','"+"222222"+"',"+to_string(0)+","+to_string(1)+","+to_string(0)+","+to_string(1)+","+to_string(0)+","+to_string(0)+")";
 	sql->info_update(&mysql,str);
 	cout<<"\n\t\t\t\t注册成功，初始登陆密码为："<<p->get_passward()<<" 请登录后修改\n";
 	sleep(1);
+	free();
 }
 
-Shop* System::shop_login()
+int System::shop_login()
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
 	system("clear");
 	cout<<"\n\t\t\t\t*************商   家   登   录*************\n";	
 	string name,pass;
@@ -2075,16 +2311,34 @@ Shop* System::shop_login()
 			{
 				cout<<"\n\t\t\t\t\t    正  在  登  录....\n";
 				sleep(1);
-				return (Shop*)tmp;
+				free();
+				return num;
 			}
 		}
 	}
 	cout<<"\n用户名或密码不对，请重新登录！\n";
 	sleep(1);
-	return NULL;
+	free();
+	return -1;
 }
-void System::shop_order_receive(Shop* ps)
+void System::shop_order_receive(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -2129,7 +2383,7 @@ void System::shop_order_receive(Shop* ps)
 						break;
 					}
 				}
-				if(flag=1)
+				if(flag == 1)
 					order2.push_back(num);
 				else
 				{
@@ -2167,9 +2421,26 @@ void System::shop_order_receive(Shop* ps)
 		cout<<"\n\t暂无用户下单！"<<endl;
 		sleep(1);
 	}
+	free();
 }
-void System::shop_order_reject(Shop* ps)
+void System::shop_order_reject(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -2249,9 +2520,26 @@ void System::shop_order_reject(Shop* ps)
 		cout<<"\n\t暂无用户下单！"<<endl;
 		sleep(1);
 	}
+	free();
 }
-void System::shop_order_search(Shop* ps)
+void System::shop_order_search(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}	
+		
 	system("clear");
 	if(!order.empty())
 	{
@@ -2315,11 +2603,26 @@ void System::shop_order_search(Shop* ps)
 		cout<<"\t暂无订单信息！"<<endl;
 		sleep(1);
 	}
-
+	free();
 }
 
-void System::shop_comment_look(Shop* ps)
+void System::shop_comment_look(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->shop_com_read(&mysql,person);//商家评价读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"商家评价："<<endl;
 	vector<map<string,string>>& com = ps->get_com();
@@ -2340,11 +2643,30 @@ void System::shop_comment_look(Shop* ps)
 		cout<<endl<<"无用户评论！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 //用户退单处理
-void System::shop_cancel_order_deal(Shop* ps)
+void System::shop_cancel_order_deal(int num_s)
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->cancel_read(&mysql,person);//退单请求读取
+	sql->order_read(&mysql,order);//订单读取
+
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	vector<int>& can = ps->get_cancel();
 	if(!can.empty())
 	{
@@ -2435,6 +2757,7 @@ void System::shop_cancel_order_deal(Shop* ps)
 			}
 			str = "delete from cancel";
 			sql->info_update(&mysql,str);
+			free();
 			return;
 		}
 
@@ -2487,6 +2810,7 @@ void System::shop_cancel_order_deal(Shop* ps)
 		str = "delete from cancel";
 		sql->info_update(&mysql,str);
 	}
+	free();
 }
 
 bool System::dishes_check(list<Dishes*>& dish,string & c_n,string & n)
@@ -2506,8 +2830,23 @@ bool System::dishes_check(list<Dishes*>& dish,string & c_n,string & n)
 	return flag;
 }
 
-void System::dishes_add(Shop* ps)
+void System::dishes_add(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->dish_info_read(&mysql,person);//菜式信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	string c_n,name;
 	float price;
 	list<Dishes*>& dish = ps->get_dish();
@@ -2547,18 +2886,35 @@ void System::dishes_add(Shop* ps)
 	}
 	cout<<"\n\t价  格：";
 	cin>>price;
-	Dishes* tp = new Dishes(num,c_n,name,price);
-	dish.push_back(tp);
+	//Dishes* tp = new Dishes(num,c_n,name,price);
+	//dish.push_back(tp);
 	string str = "insert into dishes values ("+to_string(num)+",'"+c_n+"','"+name+"',"+to_string(price)+","+to_string(ps->get_num())+")";
 	sql->info_update(&mysql,str);
 
 	cout<<"\n\t添加成功！"<<endl;
 	sleep(1);
+	free();
 
 }
 
-void System::dishes_look(Shop* ps)
+void System::dishes_look(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->dish_info_read(&mysql,person);//菜式信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
+	
 	list<Dishes*>& dish = ps->get_dish();
 	system("clear");
 	cout<<"所有菜式：\n";
@@ -2577,12 +2933,29 @@ void System::dishes_look(Shop* ps)
 		cout<<"\n\n\n\n\n\n\n\t\t\t\t\t\t\tno dishes!"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::dishes_modify(Shop* ps)
+void System::dishes_modify(int num_s)
 {
+	dishes_look(num_s);
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->dish_info_read(&mysql,person);//菜式信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	list<Dishes*>& dish = ps->get_dish();
-	dishes_look(ps);
+	
 	if(!dish.empty())
 	{
 		int num;
@@ -2590,7 +2963,10 @@ void System::dishes_modify(Shop* ps)
 		cout<<"\n\t请输入要修改菜式的编号(0取消)：";
 		cin>>num;
 		if(num==0)
+		{
+			free();
 			return;
+		}
 		for(auto tmp:dish)
 		{
 			if(num == tmp->get_num())
@@ -2605,25 +2981,46 @@ void System::dishes_modify(Shop* ps)
 
 				cout<<"\n菜式价格修改成功！"<<endl;
 				sleep(1);
+				free();
 				return;	
 			}
 		}
 		cout<<"\n未找到该菜式编号！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::dishes_del(Shop* ps)
+void System::dishes_del(int num_s)
 {
+	dishes_look(num_s);
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	sql->dish_info_read(&mysql,person);//菜式信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	list<Dishes*>& dish = ps->get_dish();
-	dishes_look(ps);
+	
 	if(!dish.empty())
 	{
 		int num;
 		cout<<"\n\t请输入要删除的菜式编号(0取消)：";
 		cin>>num;
 		if(num==0)
+		{
+			free();
 			return;
+		}
 		list<Dishes*>::iterator it;
 		for(it=dish.begin();it!=dish.end();it++)
 		{
@@ -2636,16 +3033,33 @@ void System::dishes_del(Shop* ps)
 
 				cout<<"\n菜式删除成功！"<<endl;
 				sleep(1);
+				free();
 				return;	
 			}
 		}
 		cout<<"\n未找到该菜式编号！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
-void System::policy(Shop* ps,int flag)
+void System::policy(int num_s,int flag)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}	
+		
 	string str;
 	system("clear");
 	cout<<"优惠策略设置：\n";
@@ -2692,13 +3106,28 @@ void System::policy(Shop* ps,int flag)
 
 	cout<<"\n设置成功！"<<endl;
 	sleep(1);
+	free();
 }
 //void System::discount_policy()
 //{}
 //void System::full_redece_policy()
 //{}
-void System::shop_info_display(Shop* ps)
+void System::shop_info_display(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"商家信息："<<endl;
 	cout<<endl<<"\t编    号："<<ps->get_num()<<endl;
@@ -2717,10 +3146,25 @@ void System::shop_info_display(Shop* ps)
 	cout<<endl<<"\t收    入："<<ps->get_income()<<endl;
 	getchar();
 	getchar();
+	free();
 }
 
-void System::shop_info_modify(Shop* ps)
+void System::shop_info_modify(int num_s)
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	string str,pass,tel,add;
 	float p_s;
@@ -2753,6 +3197,7 @@ void System::shop_info_modify(Shop* ps)
 		cout<<"\n登录密码不正确！\n";
 		sleep(1);
 	}
+	free();
 	//cin>>(*pcl);
 	//pcl->pass_modify();
 }
@@ -2768,9 +3213,22 @@ void System::shop_info_modify(Shop* ps)
 }
 */
 
-void System::shop_pass_modify(Shop* ps)
+void System::shop_pass_modify(int num_s)
 {
-
+	sql->shop_info_read(&mysql,person);//商家信息读取
+	Shop* ps = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_s)
+				{
+					ps=(Shop*)tmp;
+					break;
+				}
+		}
+	}		
 	string pass,pass1,pass2,str;
 	system("clear");
 	cout<<"商家密码修改：\n";
@@ -2810,10 +3268,12 @@ void System::shop_pass_modify(Shop* ps)
 		cout<<"\n密码不正确！\n";
 		sleep(1);
 	}
+	free();
 }
 
 void System::courier_enroll()
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
 	system("clear");
 	cout<<"\n\t\t\t\t*************配   送   员   注   册*************\n";	
 	int num=0,temp;
@@ -2852,15 +3312,17 @@ void System::courier_enroll()
 	cin>>tel;
 	Person *p = new Courier(num,name,tel);//构造 输入客户编号 
 	//cin>>*(Courier*)p;//重载输入客户
-	person.push_back(p);//添加客户
+	//person.push_back(p);//添加客户
 	string str = "insert into courier values ("+to_string(num)+",'"+name+"','"+tel+"','"+"333333"+"')";
 	sql->info_update(&mysql,str);
 	cout<<"\n\t\t\t\t注册成功,初始登陆密码为："<<p->get_passward()<<" 请登录后修改\n";
 	sleep(1);
+	free();
 }
 
-Courier* System::courier_login()
+int System::courier_login()
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
 	system("clear");
 	cout<<"\n\t\t\t\t*************配   送   员   登   录*************\n";	
 	string name,pass;
@@ -2869,6 +3331,7 @@ Courier* System::courier_login()
 	getline(cin,name);
 	cout<<"\n\t\t\t\t\t    密  码：";
 	hide_passward(pass);
+	//cin>>pass;
 	int num;
 	for(auto tmp:person)
 	{
@@ -2880,16 +3343,35 @@ Courier* System::courier_login()
 				//pc = (Courier*)tmp;
 				cout<<"\n\t\t\t\t\t    正  在  登  录....\n";
 				sleep(1);
-				return (Courier*)tmp;
+				free();
+				return num;
 			}
 		}
 	}
 	cout<<"\n用户名或密码不对，请重新登录\n";
 	sleep(1);
-	return NULL;
+	free();
+	return -1;
 }
-void System::courier_get_order(Courier* pc)
+
+void System::courier_get_order(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
+#if 1
 	system("clear");
 	if(!order.empty())
 	{
@@ -2947,11 +3429,19 @@ void System::courier_get_order(Courier* pc)
 						{
 							//temp->set_state(rob);
 							//增添配送员信息
-							temp->info_add(pc->get_num(),pc->get_name(),pc->get_tel());
-							string str = "update indent set c_num = "+to_string(pc->get_num())+", c_name = '"+pc->get_name()+"', c_tel = '"+pc->get_tel()+"',state = "+to_string(rob)+" where num = "+to_string(tmp);
-							sql->info_update(&mysql,str);
-							cout<<endl<<"\t"<<tmp<<" 抢单成功.."<<endl;
-							sleep(1);
+							if(sql->order_state_read(&mysql,tmp)==take)
+							{
+								//temp->info_add(pc->get_num(),pc->get_name(),pc->get_tel());
+								string str = "update indent set c_num = "+to_string(pc->get_num())+", c_name = '"+pc->get_name()+"', c_tel = '"+pc->get_tel()+"',state = "+to_string(rob)+" where num = "+to_string(tmp);
+								sql->info_update(&mysql,str);
+								cout<<endl<<"\t"<<tmp<<" 抢单成功.."<<endl;
+								sleep(1);
+							}
+							else
+							{
+								cout<<endl<<"\t"<<tmp<<" 抢单失败.."<<endl;
+								sleep(1);
+							}
 							break;
 						}	
 					}
@@ -2969,10 +3459,27 @@ void System::courier_get_order(Courier* pc)
 		cout<<"\n\t暂无可抢的订单！"<<endl;
 		sleep(1);
 	}
-
+	free();
+#endif
 }
-void System::courier_send_order(Courier* pc)
+void System::courier_send_order(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -3053,9 +3560,26 @@ void System::courier_send_order(Courier* pc)
 		cout<<"\n\t暂无可送的订单！"<<endl;
 		sleep(1);
 	}
+	free();
 }
-void System::courier_order_look(Courier* pc)
+void System::courier_order_look(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	sql->order_read(&mysql,order);//订单读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
+	
 	system("clear");
 	if(!order.empty())
 	{
@@ -3119,10 +3643,25 @@ void System::courier_order_look(Courier* pc)
 		cout<<"\t暂无订单信息！"<<endl;
 		sleep(1);
 	}
-
+	free();
 }
-void System::courier_comment_look(Courier* pc)
+void System::courier_comment_look(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	sql->courier_com_read(&mysql,person);//配送员评价读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"配送员评价："<<endl;
 	vector<map<string,string>>& com = pc->get_com();
@@ -3143,11 +3682,25 @@ void System::courier_comment_look(Courier* pc)
 		cout<<endl<<"暂无用户评论！"<<endl;
 		sleep(1);
 	}
-
+	free();
 }
 
-void System::courier_info_display(Courier* pc)
+void System::courier_info_display(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	cout<<"配送员信息："<<endl;
 	cout<<endl<<"\t编    号："<<pc->get_num()<<endl;
@@ -3155,10 +3708,25 @@ void System::courier_info_display(Courier* pc)
 	cout<<endl<<"\t联系方式："<<pc->get_tel()<<endl;
 	getchar();
 	getchar();
+	free();
 }
 
-void System::courier_info_modify(Courier* pc)
+void System::courier_info_modify(int num_c)
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
 	system("clear");
 	string str,pass,tel;
 	cout<<"配送员信息修改："<<endl;
@@ -3187,6 +3755,7 @@ void System::courier_info_modify(Courier* pc)
 		cout<<"\n登录密码不正确！\n";
 		sleep(1);
 	}
+	free();
 }
 /*
 void System::courier_info_modify(Courier* pc)
@@ -3200,9 +3769,22 @@ void System::courier_info_modify(Courier* pc)
 }
 */
 
-void System::courier_pass_modify(Courier* pc)
+void System::courier_pass_modify(int num_c)
 {
-
+	sql->courier_info_read(&mysql,person);//配送员信息读取
+	Courier* pc = NULL;
+	if(!person.empty())
+	{
+		//根据编号找用户
+		for(auto tmp:person)
+		{
+			if(tmp->get_num()==num_c)
+				{
+					pc=(Courier*)tmp;
+					break;
+				}
+		}
+	}		
 	string pass,pass1,pass2,str;
 	system("clear");
 	cout<<"配送员密码修改：\n";
@@ -3242,6 +3824,7 @@ void System::courier_pass_modify(Courier* pc)
 		cout<<"\n密码不正确！\n";
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_login()
@@ -3269,6 +3852,7 @@ void System::admin_login()
 
 void System::admin_user_del()
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
 	system("clear");
 	list<Client*>client;
 	int num;
@@ -3349,10 +3933,12 @@ void System::admin_user_del()
 		cout<<endl<<"\t当前无用户注册！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_user_mod()
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
 	system("clear");
 	list<Client*>client;
 	int num;
@@ -3366,12 +3952,16 @@ void System::admin_user_mod()
 	}
 	if(!client.empty())
 	{
-		cout<<"用户信息修改："<<endl;
-		cout<<endl<<"\t用户编号：";
+		cout<<"\n所有用户如下：\n\n";
+		for(auto tmp:client)
+		{
+			cout<<tmp->get_num()<<"\t";
+		}
+		cout<<endl<<endl<<"\t选择修改的用户编号：";
 		cin>>num;
 		if(num>USER*1000 && num<=(USER+1)*1000)
 		{
-			for(auto tmp:person)
+			for(auto tmp:client)
 			{
 				if(num==tmp->get_num())
 				{
@@ -3380,22 +3970,22 @@ void System::admin_user_mod()
 					cin>>tel;
 					cout<<endl<<"\t用户地址：";
 					setbuf(stdin,NULL);
-					getline(cin,add);;
+					getline(cin,add);
 					cout<<endl<<"\t登录密码：";
 					hide_passward(pass);
 					cout<<endl<<"\t支付密码：";
 					hide_passward(pass_pay);
-					tmp->tel_modify(tel);
-					tmp->add_modify(add);
-					tmp->pass_modify(pass);
-					((Client*)tmp)->pass_pay_modify(pass_pay);
+					//tmp->tel_modify(tel);
+					//tmp->add_modify(add);
+					//tmp->pass_modify(pass);
+					//((Client*)tmp)->pass_pay_modify(pass_pay);
 
 					str = "update client set cl_tel = '"+tel+"',cl_add = '"+add+"',cl_pass = '"+pass+"',cl_pass_pay = '"+pass_pay+"' where cl_num = "+to_string(num);
 					sql->info_update(&mysql,str);
 
 					cout<<endl<<"用户信息修改成功！"<<endl;
 					sleep(1);
-					
+					free();
 					return;
 				}
 			}
@@ -3413,10 +4003,12 @@ void System::admin_user_mod()
 		cout<<endl<<"\n\n\n\n\n\n\t\t\t\t\t\t当前无用户注册.."<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_user_display()
 {
+	sql->client_info_read(&mysql,person);//用户信息读取
 	system("clear");
 	list<Client*>client;
 	int num;
@@ -3430,23 +4022,54 @@ void System::admin_user_display()
 	}
 	if(!client.empty())
 	{
-		cout<<"所有用户如下："<<endl;
+		cout<<"所有用户如下：\n\n"<<endl<<endl;
 		for(auto tmp:client)
 		{
-			cout<<*tmp<<endl<<endl;
+			cout<<tmp->get_num()<<"\t";
 		}
 		getchar();
 		getchar();
+		int flag;
+		while(1)
+		{
+			flag=0;
+			cout<<"\n\t选择要查看的用户编号(0取消)：";
+			cin>>num;
+			if(num==0)
+				break;
+			for(auto tmp:client)
+			{
+				if(tmp->get_num()==num)
+				{
+					cout<<endl<<"\t编    号："<<tmp->get_num()<<endl;
+					cout<<endl<<"\t名    称："<<tmp->get_name()<<endl;
+					cout<<endl<<"\t联系方式："<<tmp->get_tel()<<endl;
+					cout<<endl<<"\t收货地址："<<tmp->get_add()<<endl;
+					cout<<endl<<"\t登陆密码："<<tmp->get_passward()<<endl;
+					cout<<endl<<"\t支付密码："<<tmp->get_pass_pay()<<endl;
+					cout<<endl<<"\t账户余额："<<tmp->get_money()<<endl;
+					getchar();
+					getchar();
+					flag=1;
+					break;
+				}
+			}
+			if(!flag)
+				cout<<"\n输入有误！"<<endl;
+		}
+
 	}
 	else
 	{
 		cout<<endl<<"\t当前无用户注册.."<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_shop_del()
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
 	system("clear");
 	list<Shop*>shop;
 	int num;
@@ -3527,12 +4150,13 @@ void System::admin_shop_del()
 		cout<<endl<<"\n\n\n\n\n\n\t\t\t\t\t\t当前无商家注册！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_shop_mod()
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
 	system("clear");
-	cout<<"商家信息修改："<<endl;
 	list<Shop*>shop;
 	int num;
 	for(auto tmp:person)
@@ -3545,97 +4169,108 @@ void System::admin_shop_mod()
 	}
 	if(!shop.empty())
 	{
-		cout<<endl<<"\t商家编号：";
-		cin>>num;
-		if(num>SHOP*1000 && num<=(SHOP+1)*1000)
+		cout<<"\n所有商家如下：\n\n";
+		for(auto tmp:shop)
 		{
-			for(auto tmp:person)
-			{
-				if(num==tmp->get_num())
-				{
-					string tel,add,pass,str;
-					float p_s;
-					int policy;
-					cout<<endl<<"\t联系方式：";
-					setbuf(stdin,NULL);
-					getline(cin,tel);
-					cout<<endl<<"\t商家地址：";
-					setbuf(stdin,NULL);
-					getline(cin,add);
-					cout<<endl<<"\t配送费用：";
-					cin>>p_s;
-					cout<<endl<<"\t登录密码：";
-					hide_passward(pass);
-					tmp->tel_modify(tel);
-					tmp->add_modify(add);
-					((Shop*)tmp)->set_price_send(p_s);
-					tmp->pass_modify(pass);
-					cout<<"\n\t优惠策略：1正常收费 2打折 3满减"<<endl;
-					cin>>policy;
-					while(1)
-					{
-						if(policy==1 || policy==2 || policy==3)
-							break;
-						else
-							cout<<"\n\t输入有误，重新输入：";
-
-						cin>>policy;
-					}
-
-					if(policy == NORMAL)
-					{
-						((Shop*)tmp)->set_policy(NORMAL);
-						str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(NORMAL)+",s_pass = '"+pass+"' where s_num = "+to_string(num);
-					}
-					else if(policy == DISCOUNT)
-					{
-						((Shop*)tmp)->set_policy(DISCOUNT);
-						float dc;
-						while(1)
-						{
-							cout<<"\n\t折  扣：";
-							cin>>dc;
-							if(dc<=0 || dc>=1)
-								cout<<"\n设置有误";
-							else
-								break;
-						}
-						((Shop*)tmp)->discount_modify(dc);
-						str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(DISCOUNT)+ ",discount = "+to_string(dc)+" where s_num = "+to_string(num);
-					}
-					else
-					{
-						((Shop*)tmp)->set_policy(FULL_RECE);
-						float full,re;
-						while(1)
-						{
-							cout<<"\n\t满  额：";
-							cin>>full;
-							cout<<"\n\t减  额：";
-							cin>>re;
-							if(full>0 && re>0 && full>re)
-								break;
-							else
-								cout<<"\n设置有误";
-						}
-						((Shop*)tmp)->full_rece_modify(full,re);
-						str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(FULL_RECE)+",full = "+to_string(full)+",rece = "+to_string(re)+" where s_num = "+to_string(num);
-					}
-
-					sql->info_update(&mysql,str);
-
-					cout<<endl<<"\t商家信息修改成功！"<<endl;
-					sleep(1);
-					return;
-				}
-			}
-			cout<<endl<<"\t未找到该商家！"<<endl;
-			sleep(1);
+			cout<<tmp->get_num()<<"\t";
 		}
-		else
+		while(1)
 		{
-			cout<<endl<<"\t商家编号不正确！"<<endl;
-			sleep(1);
+			cout<<endl<<endl<<"\t选择修改的商家编号(0取消)：";
+			cin>>num;
+			if(num==0)
+				break;
+			if(num>SHOP*1000 && num<=(SHOP+1)*1000)
+			{
+				for(auto tmp:person)
+				{
+					if(num==tmp->get_num())
+					{
+						string tel,add,pass,str;
+						float p_s;
+						int policy;
+						cout<<endl<<"\t联系方式：";
+						setbuf(stdin,NULL);
+						getline(cin,tel);
+						cout<<endl<<"\t商家地址：";
+						setbuf(stdin,NULL);
+						getline(cin,add);
+						cout<<endl<<"\t配送费用：";
+						cin>>p_s;
+						cout<<endl<<"\t登录密码：";
+						hide_passward(pass);
+						tmp->tel_modify(tel);
+						tmp->add_modify(add);
+						((Shop*)tmp)->set_price_send(p_s);
+						tmp->pass_modify(pass);
+						cout<<"\n\t优惠策略：1正常收费 2打折 3满减"<<endl;
+						cin>>policy;
+						while(1)
+						{
+							if(policy==1 || policy==2 || policy==3)
+								break;
+							else
+								cout<<"\n\t输入有误，重新输入：";
+
+							cin>>policy;
+						}
+
+						if(policy == NORMAL)
+						{
+							((Shop*)tmp)->set_policy(NORMAL);
+							str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(NORMAL)+",s_pass = '"+pass+"' where s_num = "+to_string(num);
+						}
+						else if(policy == DISCOUNT)
+						{
+							((Shop*)tmp)->set_policy(DISCOUNT);
+							float dc;
+							while(1)
+							{
+								cout<<"\n\t折  扣：";
+								cin>>dc;
+								if(dc<=0 || dc>=1)
+									cout<<"\n设置有误";
+								else
+									break;
+							}
+							((Shop*)tmp)->discount_modify(dc);
+							str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(DISCOUNT)+ ",discount = "+to_string(dc)+" where s_num = "+to_string(num);
+						}
+						else
+						{
+							((Shop*)tmp)->set_policy(FULL_RECE);
+							float full,re;
+							while(1)
+							{
+								cout<<"\n\t满  额：";
+								cin>>full;
+								cout<<"\n\t减  额：";
+								cin>>re;
+								if(full>0 && re>0 && full>re)
+									break;
+								else
+									cout<<"\n设置有误";
+							}
+							((Shop*)tmp)->full_rece_modify(full,re);
+							str = "update shop set s_tel = '"+tel+"',s_add = '"+add+"',price_send = "+to_string(p_s)+",policy = "+to_string(FULL_RECE)+",full = "+to_string(full)+",rece = "+to_string(re)+" where s_num = "+to_string(num);
+						}
+
+						sql->info_update(&mysql,str);
+
+						cout<<endl<<"\t商家信息修改成功！"<<endl;
+						sleep(1);
+						free();
+						return;
+					}
+				}
+				cout<<endl<<"\t未找到该商家！"<<endl;
+				sleep(1);
+			}
+			else
+			{
+				cout<<endl<<"\t商家编号不正确！"<<endl;
+				sleep(1);
+			}
 		}
 	}
 	else
@@ -3643,10 +4278,12 @@ void System::admin_shop_mod()
 		cout<<endl<<"\t当前无商家注册.."<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 void System::admin_shop_display()
 {
+	sql->shop_info_read(&mysql,person);//商家信息读取
 	system("clear");
 	list<Shop*>shop;
 	int num;
@@ -3660,22 +4297,59 @@ void System::admin_shop_display()
 	}
 	if(!shop.empty())
 	{
-		cout<<"所有商家如下："<<endl;
+		cout<<"所有商家如下："<<endl<<endl;
 		for(auto tmp:shop)
 		{
-			cout<<*tmp<<endl<<endl;
+			cout<<tmp->get_num()<<"\t";
 		}
 		getchar();
 		getchar();
+		int flag;
+		while(1)
+		{
+			flag=0;
+			cout<<"\n\t选择要查看的商家编号(0取消)：";
+			cin>>num;
+			if(num==0)
+				break;
+			for(auto tmp:shop)
+			{
+				if(tmp->get_num()==num)
+				{
+					cout<<endl<<"\t编    号："<<tmp->get_num()<<endl;
+					cout<<endl<<"\t名    称："<<tmp->get_name()<<endl;
+					cout<<endl<<"\t联系方式："<<tmp->get_tel()<<endl;
+					cout<<endl<<"\t地    址："<<tmp->get_add()<<endl;
+					cout<<endl<<"\t收费方式：";
+					if(tmp->get_policy()==NORMAL)
+						cout<<"正常收费"<<endl;
+					else if(tmp->get_policy()==DISCOUNT)
+						cout<<"打"<<tmp->get_dc()<<"折"<<endl;
+					else
+						cout<<"满 "<<tmp->get_full()<<" 减 "<<tmp->get_rece()<<endl;
+
+					cout<<endl<<"\t配送费用："<<tmp->get_price_send()<<endl;
+					cout<<endl<<"\t收    入："<<tmp->get_income()<<endl;
+					getchar();
+					getchar();
+					flag=1;
+					break;
+				}
+			}
+			if(!flag)
+				cout<<"\n输入有误！"<<endl;
+		}
 	}
 	else
 	{
 		cout<<endl<<"\t当前无商家注册！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 void System::admin_courier_del()
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
 	system("clear");
 	list<Courier*>courier;
 	int num;
@@ -3689,16 +4363,16 @@ void System::admin_courier_del()
 	}
 	if(!courier.empty())
 	{
-		cout<<"所有配送员如下："<<endl;
+		cout<<"所有配送员如下：\n\n"<<endl;
 		for(auto tmp:courier)
 		{
-			cout<<*tmp<<endl<<endl;
+			cout<<tmp->get_num()<<"\t";
 		}
 		vector<int> cancel;
 		int num;
 		while(1)
 		{
-			cout<<"\n\t要删除的配送员编号(0结束)：";
+			cout<<"\n\n\t要删除的配送员编号(0结束)：";
 			cin>>num;
 			if(num>COURIER && num<=(COURIER+1)*1000)
 			{
@@ -3721,7 +4395,7 @@ void System::admin_courier_del()
 			{
 				if(tmp==temp->get_c_num())
 				{
-					if(temp->get_state()>take && temp->get_state()<comment)
+					if(temp->get_state()>take && temp->get_state()<receive)
 					{
 						flag = 1;
 						break;
@@ -3731,7 +4405,7 @@ void System::admin_courier_del()
 			if(flag)
 			{
 				cout<<endl<<"配送员 "<<tmp<<" 有未完成订单或输入有误，删除失败...."<<endl;
-				sleep(0.5);
+				sleep(1);
 			}
 			else
 			{
@@ -3743,7 +4417,7 @@ void System::admin_courier_del()
 						delete ((Courier*)(*it));
 						person.erase(it);
 
-						string str = "delete from courier where num = "+to_string(tmp);
+						string str = "delete from courier where c_num = "+to_string(tmp);
 						sql->info_update(&mysql,str);
 
 						cout<<endl<<'\t'<<tmp<<" 配送员删除成功...."<<endl;
@@ -3759,11 +4433,12 @@ void System::admin_courier_del()
 		cout<<endl<<"\n\n\n\n\n\n\t\t\t\t\t\t当前无配送员注册！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 void System::admin_courier_mod()
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
 	system("clear");
-	cout<<"配送员信息修改："<<endl;
 	list<Courier*>courier;
 	int num;
 	for(auto tmp:person)
@@ -3776,37 +4451,48 @@ void System::admin_courier_mod()
 	}
 	if(!courier.empty())
 	{
-		cout<<endl<<"\t配送员编号：";
-		cin>>num;
-		if(num>COURIER*1000 && num<=(COURIER+1)*1000)
+		cout<<"\n所有配送员如下：\n\n";
+		for(auto tmp:courier)
 		{
-			for(auto tmp:person)
-			{
-				if(num==tmp->get_num())
-				{
-					string tel,pass,str;
-					cout<<endl<<"\t联系方式：";
-					cin>>tel;
-					tmp->tel_modify(tel);
-					cout<<"\n\t登录密码：";
-					hide_passward(pass);
-					tmp->pass_modify(pass);
-
-					str = "update courier set c_tel = '"+tel+"',c_pass = '"+pass+"' where c_num = "+to_string(num);
-					sql->info_update(&mysql,str);
-
-					cout<<endl<<"\t商家信息修改成功！"<<endl;
-					sleep(1);
-					return;
-				}
-			}
-			cout<<endl<<"\t未找到该配送员！"<<endl;
-			sleep(1);
+			cout<<tmp->get_num()<<"\t";
 		}
-		else
+		while(1)
 		{
-			cout<<endl<<"\t配送员编号不正确！"<<endl;
-			sleep(1);
+			cout<<endl<<"\n\t选择要修改的配送员编号(0结束)：";
+			cin>>num;
+			if(num==0)
+				break;
+			if(num>COURIER*1000 && num<=(COURIER+1)*1000)
+			{
+				for(auto tmp:person)
+				{
+					if(num==tmp->get_num())
+					{
+						string tel,pass,str;
+						cout<<endl<<"\t联系方式：";
+						cin>>tel;
+						//tmp->tel_modify(tel);
+						cout<<"\n\t登录密码：";
+						hide_passward(pass);
+						//tmp->pass_modify(pass);
+
+						str = "update courier set c_tel = '"+tel+"',c_pass = '"+pass+"' where c_num = "+to_string(num);
+						sql->info_update(&mysql,str);
+
+						cout<<endl<<"\t配送员信息修改成功！"<<endl;
+						sleep(1);
+						free();
+						return;
+					}
+				}
+				cout<<endl<<"\t未找到该配送员！"<<endl;
+				sleep(1);
+			}
+			else
+			{
+				cout<<endl<<"\t配送员编号不正确！"<<endl;
+				sleep(1);
+			}
 		}
 	}
 	else
@@ -3814,9 +4500,11 @@ void System::admin_courier_mod()
 		cout<<endl<<"\t当前无配送员注册.."<<endl;
 		sleep(1);
 	}
+	free();
 }
 void System::admin_courier_display()
 {
+	sql->courier_info_read(&mysql,person);//配送员信息读取
 	system("clear");
 	list<Courier*>courier;
 	int num;
@@ -3830,22 +4518,47 @@ void System::admin_courier_display()
 	}
 	if(!courier.empty())
 	{
-		cout<<"所有配送员如下："<<endl;
+		cout<<"所有配送员如下：\n\n"<<endl;
 		for(auto tmp:courier)
 		{
-			cout<<*tmp<<endl<<endl;
+			cout<<tmp->get_num()<<"\t";
 		}
-		getchar();
-		getchar();
+		int flag;
+		while(1)
+		{
+			flag=0;
+			cout<<"\n\n\t选择要查看的配送员编号(0结束)：";
+			cin>>num;
+			if(num==0)
+				break;
+			for(auto tmp:courier)
+			{
+				if(tmp->get_num()==num)
+				{
+					cout<<endl<<"\t编    号："<<tmp->get_num()<<endl;
+					cout<<endl<<"\t名    称："<<tmp->get_name()<<endl;
+					cout<<endl<<"\t联系方式："<<tmp->get_tel()<<endl;
+					cout<<endl<<"\t登陆密码："<<tmp->get_passward()<<endl;
+					getchar();
+					getchar();
+					flag=1;
+					break;
+				}
+			}
+			if(!flag)
+				cout<<"\n输入有误！"<<endl;
+		}
 	}
 	else
 	{
 		cout<<endl<<"\t当前无配送员注册！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 void System::admin_order_del()
 {
+	sql->order_read(&mysql,order);//订单读取
 	system("clear");
 	if(!order.empty())
 	{
@@ -3913,11 +4626,13 @@ void System::admin_order_del()
 		cout<<endl<<"\t暂无订单信息！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 void System::admin_order_mod()
 {}
 void System::admin_order_display()
 {
+	sql->order_read(&mysql,order);//订单读取
 	system("clear");
 	if(!order.empty())
 	{
@@ -3935,6 +4650,7 @@ void System::admin_order_display()
 		cout<<endl<<"\t暂无订单信息！"<<endl;
 		sleep(1);
 	}
+	free();
 }
 
 

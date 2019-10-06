@@ -1,5 +1,5 @@
 OBJ=sql_lrh.o dishes.o person.o client.o shop.o courier.o order.o menu.o main.o
-OPJ=-c -I ../inc/ -g -std=c++11 
+OPJ=-c -I ../inc/ -I /usr/include/mysql -g -std=c++11 -Wall 
 all:$(OBJ)
 	g++ $(OBJ) -o all -lmysqlclient
 menu.o:menu.cpp
